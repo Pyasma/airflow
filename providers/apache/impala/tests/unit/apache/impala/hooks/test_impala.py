@@ -19,6 +19,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sqlalchemy.engine import URL
 
 from airflow.models import Connection
 from airflow.providers.apache.impala.hooks.impala import ImpalaHook

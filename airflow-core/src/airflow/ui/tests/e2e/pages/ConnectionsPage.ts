@@ -17,6 +17,7 @@
  * under the License.
  */
 import { expect, type Locator, type Page } from "@playwright/test";
+import { LazyClipboard } from "src/components/ui";
 import { BasePage } from "tests/e2e/pages/BasePage";
 
 type ConnectionDetails = {
@@ -91,11 +92,11 @@ export class ConnectionsPage extends BasePage {
     this.rowsPerPageSelect = page.locator("select");
 
     // Sorting and filtering
-    this.tableHeader = page.getByRole("columnheader").first();
+    this.tableHeader = this.connectionsTable.getByRole("columnheader").first();
 
-    this.connectionIdHeader = page.getByText("Connection ID").first();
-    this.connectionTypeHeader = page.getByText("Connection Type").first();
-    this.hostHeader = page.getByText("Host").first();
+    this.connectionIdHeader = this.connectionsTable.getByRole("columnheader", { name: "Connection ID" });
+    this.connectionTypeHeader = this.connectionsTable.getByRole("columnheader", { name: "Connection Type" });
+    this.hostHeader = this.connectionsTable.getByRole("columnheader", { name: "Host" });
 
     this.searchInput = page.getByPlaceholder(/search/i).first();
     // All table body rows (used by connectionRows for web-first assertions)
@@ -158,9 +159,11 @@ export class ConnectionsPage extends BasePage {
     const confirmButton = deleteDialog.getByRole("button", { name: "Yes, Delete" });
 
     await expect(confirmButton).toBeVisible({ timeout: 5000 });
-    // force: true bypasses Playwright's hit-testing check — the button is correct but
-    // the dialog backdrop can still briefly overlap it right after the animation ends.
-    await confirmButton.click({ force: true });
+    
+    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+
+    await confirmButton.click({ trial : true });
+    await confirmButton.click();
 
     await expect(this.getConnectionRow(connectionId)).not.toBeVisible({ timeout: 15_000 });
   }
@@ -169,13 +172,10 @@ export class ConnectionsPage extends BasePage {
   public async editConnection(connectionId: string, updates: Partial<ConnectionDetails>): Promise<void> {
     await this.clickEditButton(connectionId);
 
-    // Wait for form to be fully populated with existing connection data before interacting
-    await expect(this.connectionIdInput).toHaveValue(connectionId, { timeout: 10_000 });
 
-    // Wait for the form to stabilize — React re-renders the conn_type combobox as
-    // existing connection data loads from the API, which causes "detached from DOM"
-    // errors if we interact with it too early.
-    await this.page.waitForLoadState("networkidle", { timeout: 10_000 });
+    await expect(this.connectionIdInput).toBeVisible({ timeout: 10_000 });
+    await expect(this.connectionIdInput).toBeEnabled({ timeout: 10_000 });
+    await expect(this.connectionIdInput).toHaveValue(connectionId, { timeout: 10_000 });
 
     // Fill the fields that need updating
     await this.fillConnectionForm(updates);
@@ -191,7 +191,7 @@ export class ConnectionsPage extends BasePage {
     if (details.conn_type !== undefined && details.conn_type !== "") {
       // Scope the combobox to the form dialog to avoid matching stale elements
       // outside the form. Use click() directly — Playwright retries until the
-      // element is visible, enabled, and stable, avoiding the "detached from DOM"
+      // element is visiblawait expect(this.connectionIdInput).toBeVisible({ timeout: 10_000 });e, enabled, and stable, avoiding the "detached from DOM"
       // race that occurs when toBeEnabled() passes but the node is replaced before click().
       const selectCombobox = this.connectionForm.getByRole("combobox").first();
 
@@ -283,26 +283,28 @@ export class ConnectionsPage extends BasePage {
     await expect(this.page.locator("tbody tr").first()).toBeVisible({ timeout: 5000 });
 
     let stableRowCount = 0;
+    let lastSeenCount = -1;
 
     await expect
       .poll(
         async () => {
           const count = await this.page.locator("tbody tr").count();
 
-          if (count > 0) {
+          if (count > 0 && count === lastSeenCount) {
             stableRowCount = count;
 
             return true;
           }
+          lastSeenCount = count;
 
           return false;
         },
-        { intervals: [100, 200, 500], timeout: 10_000 },
+        { intervals: [100, 200, 500, 500], timeout: 10_000 },
       )
       .toBeTruthy()
       .catch(() => {
-        // If timeout, just use current count
-        stableRowCount = 0;
+        // If timeout, fall back to last observed count
+        stableRowCount = lastSeenCount > 0 ? lastSeenCount : 0;
       });
 
     if (stableRowCount === 0) {

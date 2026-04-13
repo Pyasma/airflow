@@ -277,9 +277,14 @@ test.describe("Connections Page - Search and Filter", () => {
     // Check that we have at least one row before searching (web-first assertion)
     await connectionsPage.searchConnections(searchTerm);
 
-    // Verify filtered results contain the search term
-    await expect(connectionsPage.connectionRows).toHaveCount(1);
     await expect(connectionsPage.getConnectionRow(searchTerm)).toBeVisible();
+    await expect.poll(async () => { 
+      const rowTexts = await connectionsPage.connectionRows.allTextContents();
+
+      return rowTexts.length > 0 && rowTexts.every((text) => {
+        text.toLowerCase().includes(searchTerm.toLowerCase()));
+      }).toBe(true);
+    })
   });
 
   test("should display all connections when search is cleared", async () => {

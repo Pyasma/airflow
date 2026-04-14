@@ -281,10 +281,10 @@ test.describe("Connections Page - Search and Filter", () => {
     await expect.poll(async () => { 
       const rowTexts = await connectionsPage.connectionRows.allTextContents();
 
-      return rowTexts.length > 0 && rowTexts.every((text) => {
-        text.toLowerCase().includes(searchTerm.toLowerCase()));
-      }).toBe(true);
-    })
+      return rowTexts.length > 0 && rowTexts.every((text) =>
+        text.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }).toBe(true);
   });
 
   test("should display all connections when search is cleared", async () => {

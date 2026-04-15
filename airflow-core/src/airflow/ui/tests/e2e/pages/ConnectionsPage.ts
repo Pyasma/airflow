@@ -17,7 +17,6 @@
  * under the License.
  */
 import { expect, type Locator, type Page } from "@playwright/test";
-import { LazyClipboard } from "src/components/ui";
 import { BasePage } from "tests/e2e/pages/BasePage";
 
 type ConnectionDetails = {
@@ -94,9 +93,13 @@ export class ConnectionsPage extends BasePage {
     // Sorting and filtering
     this.tableHeader = this.connectionsTable.getByRole("columnheader").first();
 
-    this.connectionIdHeader = this.connectionsTable.getByRole("columnheader", { name: "Connection ID" });
-    this.connectionTypeHeader = this.connectionsTable.getByRole("columnheader", { name: "Connection Type" });
-    this.hostHeader = this.connectionsTable.getByRole("columnheader", { name: "Host" });
+    this.connectionIdHeader = this.connectionsTable
+      .getByRole("columnheader")
+      .filter({ hasText: "Connection ID" });
+    this.connectionTypeHeader = this.connectionsTable
+      .getByRole("columnheader")
+      .filter({ hasText: "Connection Type" });
+    this.hostHeader = this.connectionsTable.getByRole("columnheader").filter({ hasText: "Host" });
 
     this.searchInput = page.getByPlaceholder(/search/i).first();
     // All table body rows (used by connectionRows for web-first assertions)
@@ -159,10 +162,8 @@ export class ConnectionsPage extends BasePage {
     const confirmButton = deleteDialog.getByRole("button", { name: "Yes, Delete" });
 
     await expect(confirmButton).toBeVisible({ timeout: 5000 });
-    
-    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
 
-    await confirmButton.click({ trial : true });
+    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
     await confirmButton.click();
 
     await expect(this.getConnectionRow(connectionId)).not.toBeVisible({ timeout: 15_000 });
@@ -171,7 +172,6 @@ export class ConnectionsPage extends BasePage {
   // Edit a connection by connection ID
   public async editConnection(connectionId: string, updates: Partial<ConnectionDetails>): Promise<void> {
     await this.clickEditButton(connectionId);
-
 
     await expect(this.connectionIdInput).toBeVisible({ timeout: 10_000 });
     await expect(this.connectionIdInput).toBeEnabled({ timeout: 10_000 });

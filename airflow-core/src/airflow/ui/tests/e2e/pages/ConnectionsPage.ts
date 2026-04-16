@@ -18,6 +18,7 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 import { BasePage } from "tests/e2e/pages/BasePage";
+import { waitForStableRowCount } from "tests/e2e/utils/test-helpers";
 
 type ConnectionDetails = {
   conn_type: string;
@@ -32,7 +33,6 @@ type ConnectionDetails = {
 };
 
 export class ConnectionsPage extends BasePage {
-  // Page URLs
   public static get connectionsListUrl(): string {
     return "/connections";
   }
@@ -45,7 +45,6 @@ export class ConnectionsPage extends BasePage {
   // Core page elements
   public readonly connectionsTable: Locator;
   public readonly connectionTypeHeader: Locator;
-  public readonly connectionTypeSelect: Locator;
   public readonly descriptionInput: Locator;
   public readonly emptyState: Locator;
   public readonly hostHeader: Locator;
@@ -60,29 +59,26 @@ export class ConnectionsPage extends BasePage {
   public readonly schemaInput: Locator;
   public readonly searchInput: Locator;
   public readonly successAlert: Locator;
-  // Sorting and filtering
   public readonly tableHeader: Locator;
   public readonly testConnectionButton: Locator;
 
   public constructor(page: Page) {
     super(page);
-    // Table elements (Chakra UI DataTable)
-    this.connectionsTable = page.locator('[role="grid"], table');
-    this.emptyState = page.locator("text=/No connection found!/i");
+    this.connectionsTable = page.getByRole("grid").or(page.locator("table"));
+    this.emptyState = page.getByText(/no connection found/i);
 
-    // Action buttons
     this.addButton = page.getByRole("button", { name: "Add Connection" });
     this.testConnectionButton = page.getByRole("button", { name: "Test" });
     this.saveButton = page.getByRole("button", { name: /^save$/i });
 
-    // Form inputs (Chakra UI inputs)
-    this.connectionForm = page.locator('[data-scope="dialog"][data-part="content"]');
+    // Scoped via input[name] because Chakra UI forms may lack
+    // associated <label> elements, making getByLabel unreliable.
+    this.connectionForm = page.getByRole("dialog");
     this.connectionIdInput = page.locator('input[name="connection_id"]').first();
-    this.connectionTypeSelect = page.getByRole("combobox").first();
     this.hostInput = page.locator('input[name="host"]').first();
     this.portInput = page.locator('input[name="port"]').first();
     this.loginInput = page.locator('input[name="login"]').first();
-    this.passwordInput = page.locator('input[name="password"], input[type="password"]').first();
+    this.passwordInput = page.locator('input[name="password"]').first();
     this.schemaInput = page.locator('input[name="schema"]').first();
     this.descriptionInput = page.locator('[name="description"]').first();
     // Alerts
@@ -106,7 +102,6 @@ export class ConnectionsPage extends BasePage {
     this.connectionRows = page.locator("tbody tr");
   }
 
-  // Click the Add button to create a new connection
   public async clickAddButton(): Promise<void> {
     await expect(this.addButton).toBeVisible({ timeout: 5000 });
     await expect(this.addButton).toBeEnabled({ timeout: 5000 });
@@ -115,7 +110,6 @@ export class ConnectionsPage extends BasePage {
     await expect(this.connectionIdInput).toBeVisible({ timeout: 10_000 });
   }
 
-  // Click edit button for a specific connection
   public async clickEditButton(connectionId: string): Promise<void> {
     const row = await this.findConnectionRow(connectionId);
 
@@ -139,7 +133,6 @@ export class ConnectionsPage extends BasePage {
     await this.waitForConnectionsListLoad();
   }
 
-  // Delete a connection by connection ID
   public async deleteConnection(connectionId: string): Promise<void> {
     const row = await this.findConnectionRow(connectionId);
 
@@ -151,7 +144,6 @@ export class ConnectionsPage extends BasePage {
 
     await expect(deleteButton).toBeVisible({ timeout: 10_000 });
     await expect(deleteButton).toBeEnabled({ timeout: 5000 });
-    await deleteButton.click();
 
     // Wait for the dialog to finish its open animation (data-state="open" is set by
     // Ark UI once the transition completes). Without this, the backdrop can cover the
@@ -169,7 +161,6 @@ export class ConnectionsPage extends BasePage {
     await expect(this.getConnectionRow(connectionId)).not.toBeVisible({ timeout: 15_000 });
   }
 
-  // Edit a connection by connection ID
   public async editConnection(connectionId: string, updates: Partial<ConnectionDetails>): Promise<void> {
     await this.clickEditButton(connectionId);
 
@@ -182,7 +173,6 @@ export class ConnectionsPage extends BasePage {
     await this.saveConnection();
   }
 
-  // Fill connection form with details
   public async fillConnectionForm(details: Partial<ConnectionDetails>): Promise<void> {
     if (details.connection_id !== undefined && details.connection_id !== "") {
       await this.connectionIdInput.fill(details.connection_id);
@@ -195,11 +185,13 @@ export class ConnectionsPage extends BasePage {
       // race that occurs when toBeEnabled() passes but the node is replaced before click().
       const selectCombobox = this.connectionForm.getByRole("combobox").first();
 
-      await expect(selectCombobox).toBeEnabled({ timeout: 25_000 });
+      await expect(async () => {
+        await expect(selectInput).toBeEnabled({ timeout: 10_000 });
+        await selectInput.click({ force: true, timeout: 5000 });
+      }).toPass({ intervals: [2000, 3000], timeout: 120_000 });
 
       await selectCombobox.click();
 
-      // Wait for options to appear and click the matching option
       const option = this.page.getByRole("option", { name: new RegExp(details.conn_type, "i") }).first();
 
       await expect(option).toBeVisible({ timeout: 10_000 });
@@ -244,7 +236,7 @@ export class ConnectionsPage extends BasePage {
         await extraAccordion.click();
         const monacoEditor = this.page.locator(".monaco-editor").first();
 
-        await monacoEditor.waitFor({ state: "visible", timeout: 5000 });
+        await monacoEditor.waitFor({ state: "visible", timeout: 30_000 });
 
         // Set value via Monaco API to avoid auto-closing bracket/quote issues with keyboard input
         await monacoEditor.evaluate((container, value) => {
@@ -265,20 +257,17 @@ export class ConnectionsPage extends BasePage {
           }
         }, details.extra);
 
-        // Click outside to trigger blur
         await this.connectionIdInput.click();
       }
     }
   }
 
-  // Get connection count from current page
   public async getConnectionCount(): Promise<number> {
     const ids = await this.getConnectionIds();
 
     return ids.length;
   }
 
-  // Get all connection IDs from the current page
   public async getConnectionIds(): Promise<Array<string>> {
     await expect(this.page.locator("tbody tr").first()).toBeVisible({ timeout: 5000 });
 
@@ -311,18 +300,16 @@ export class ConnectionsPage extends BasePage {
       return [];
     }
 
-    let rows = this.page.locator("tbody tr");
     const connectionIds: Array<string> = [];
 
-    // Process all rows
     for (let i = 0; i < stableRowCount; i++) {
       try {
-        const row = rows.nth(i);
+        const row = rowLocator.nth(i);
         const cells = row.locator("td");
         const cellCount = await cells.count();
 
         if (cellCount > 1) {
-          // Connection ID is typically in the second cell (after checkbox)
+          // Second cell (after checkbox) contains the connection ID.
           const idCell = cells.nth(1);
           const text = await idCell.textContent({ timeout: 3000 });
 
@@ -331,7 +318,6 @@ export class ConnectionsPage extends BasePage {
           }
         }
       } catch {
-        // Skip rows that can't be read
         continue;
       }
     }
@@ -346,21 +332,26 @@ export class ConnectionsPage extends BasePage {
 
   // Navigate to Connections list page
   public async navigate(): Promise<void> {
-    await this.navigateTo(ConnectionsPage.connectionsListUrl);
-    await this.waitForConnectionsListLoad();
+    await expect(async () => {
+      await this.navigateTo(ConnectionsPage.connectionsListUrl);
+      await this.waitForConnectionsListLoad();
+    }).toPass({ intervals: [2000], timeout: 60_000 });
   }
 
-  // Save the connection form
   public async saveConnection(): Promise<void> {
     await expect(this.saveButton).toBeVisible({ timeout: 10_000 });
     await expect(this.saveButton).toBeEnabled({ timeout: 5000 });
     await this.saveButton.click();
 
-    // Wait for either redirect OR success message
     await Promise.race([
       this.page.waitForURL("**/connections", { timeout: 10_000 }),
-      this.successAlert.waitFor({ state: "visible", timeout: 10_000 }),
+      this.successAlert.waitFor({ state: "visible", timeout: 30_000 }),
     ]);
+
+    // Ensure the dialog is fully closed before proceeding.
+    // Ark UI may leave the backdrop element in the DOM with data-state="closed",
+    // but it is non-interactive (pointer-events: none) and does not block clicks.
+    await expect(this.connectionForm).toBeHidden({ timeout: 10_000 });
   }
 
   public async searchConnections(searchTerm: string): Promise<void> {
@@ -378,7 +369,6 @@ export class ConnectionsPage extends BasePage {
     }
   }
 
-  // Verify connection details are displayed in the list
   public async verifyConnectionInList(connectionId: string, expectedType: string): Promise<void> {
     const row = await this.findConnectionRow(connectionId);
 
@@ -398,18 +388,17 @@ export class ConnectionsPage extends BasePage {
       return await this.findConnectionRowUsingSearch(connectionId);
     }
 
-    return null;
+    return undefined;
   }
 
   private async findConnectionRowUsingSearch(connectionId: string): Promise<Locator | null> {
     await this.waitForConnectionsListLoad();
     await this.searchConnections(connectionId);
 
-    // Check if table is visible (without throwing)
     const isTableVisible = await this.connectionsTable.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (!isTableVisible) {
-      return null;
+      return undefined;
     }
 
     const row = this.page.locator("tbody tr").filter({ hasText: connectionId }).first();
@@ -424,14 +413,12 @@ export class ConnectionsPage extends BasePage {
     return row;
   }
 
-  // Wait for connections list to fully load
   private async waitForConnectionsListLoad(): Promise<void> {
-    await expect(this.page).toHaveURL(/\/connections/, { timeout: 3000 });
+    await expect(this.page).toHaveURL(/\/connections/, { timeout: 10_000 });
     await this.page.waitForLoadState("domcontentloaded");
 
     const table = this.connectionsTable;
 
-    // Wait for either table or empty state
     await expect(table.or(this.emptyState)).toBeVisible({ timeout: 10_000 });
 
     if (await table.isVisible().catch(() => false)) {

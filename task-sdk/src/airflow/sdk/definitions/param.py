@@ -20,6 +20,7 @@ import contextlib
 import copy
 import json
 import logging
+import re
 from collections.abc import ItemsView, Iterable, Mapping, MutableMapping, ValuesView
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
@@ -33,6 +34,36 @@ if TYPE_CHECKING:
     from airflow.sdk.types import Operator
 
 logger = logging.getLogger(__name__)
+
+# Matches ISO 8601 duration strings such as PT15M, P1Y2M3DT4H5M6S, P1W, P1DT30S.
+# Decimal fractions with either "." or "," are allowed on any component (e.g. PT1.5H, PT30.5S).
+_ISO8601_DURATION_RE = re.compile(
+    r"^P"
+    r"(?:\d+(?:[.,]\d+)?Y)?"
+    r"(?:\d+(?:[.,]\d+)?M)?"
+    r"(?:\d+(?:[.,]\d+)?W)?"
+    r"(?:\d+(?:[.,]\d+)?D)?"
+    r"(?:T(?:\d+(?:[.,]\d+)?H)?(?:\d+(?:[.,]\d+)?M)?(?:\d+(?:[.,]\d+)?S)?)?"
+    r"$"
+)
+
+
+def _check_iso8601_duration(instance: str) -> bool:
+    """Validate an ISO 8601 duration string. Used as a jsonschema format checker."""
+    if not isinstance(instance, str):
+        return True
+    if not _ISO8601_DURATION_RE.fullmatch(instance) or instance in ("P", "PT"):
+        raise ValueError(f"{instance!r} is not a valid ISO 8601 duration")
+    return True
+
+
+def _make_format_checker() -> Any:
+    """Return a FormatChecker that includes our ISO 8601 duration format checker."""
+    from jsonschema import FormatChecker
+
+    checker = FormatChecker()
+    checker.checks("duration", raises=ValueError)(_check_iso8601_duration)
+    return checker
 
 
 class Param:
@@ -96,7 +127,6 @@ class Param:
             If true and validations fails, the return value would be None.
         """
         import jsonschema
-        from jsonschema import FormatChecker
         from jsonschema.exceptions import ValidationError
 
         if value is not NOTSET:
@@ -107,7 +137,7 @@ class Param:
                 return None
             raise ParamValidationError("No value passed and Param has no default value")
         try:
-            jsonschema.validate(final_val, self.schema, format_checker=FormatChecker())
+            jsonschema.validate(final_val, self.schema, format_checker=_make_format_checker())
         except ValidationError as err:
             if suppress_exception:
                 return None

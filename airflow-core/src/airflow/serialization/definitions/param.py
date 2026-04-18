@@ -20,12 +20,43 @@ from __future__ import annotations
 
 import collections.abc
 import copy
+import re
 from typing import TYPE_CHECKING, Any, Literal
 
 from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
+
+# Matches ISO 8601 duration strings such as PT15M, P1Y2M3DT4H5M6S, P1W, P1DT30S.
+# Decimal fractions with either "." or "," are allowed on any component (e.g. PT1.5H, PT30.5S).
+_ISO8601_DURATION_RE = re.compile(
+    r"^P"
+    r"(?:\d+(?:[.,]\d+)?Y)?"
+    r"(?:\d+(?:[.,]\d+)?M)?"
+    r"(?:\d+(?:[.,]\d+)?W)?"
+    r"(?:\d+(?:[.,]\d+)?D)?"
+    r"(?:T(?:\d+(?:[.,]\d+)?H)?(?:\d+(?:[.,]\d+)?M)?(?:\d+(?:[.,]\d+)?S)?)?"
+    r"$"
+)
+
+
+def _check_iso8601_duration(instance: str) -> bool:
+    """Validate an ISO 8601 duration string. Used as a jsonschema format checker."""
+    if not isinstance(instance, str):
+        return True
+    if not _ISO8601_DURATION_RE.fullmatch(instance) or instance in ("P", "PT"):
+        raise ValueError(f"{instance!r} is not a valid ISO 8601 duration")
+    return True
+
+
+def _make_format_checker() -> Any:
+    """Return a FormatChecker that includes our ISO 8601 duration format checker."""
+    import jsonschema
+
+    checker = jsonschema.FormatChecker()
+    checker.checks("duration", raises=ValueError)(_check_iso8601_duration)
+    return checker
 
 
 class SerializedParam:
@@ -60,7 +91,7 @@ class SerializedParam:
         try:
             if not is_arg_set(value := self.value):
                 raise ValueError("No value passed")
-            jsonschema.validate(value, self.schema, format_checker=jsonschema.FormatChecker())
+            jsonschema.validate(value, self.schema, format_checker=_make_format_checker())
         except Exception:
             if not raises:
                 return None

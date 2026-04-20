@@ -18,7 +18,6 @@
  */
 import { expect, type Locator, type Page } from "@playwright/test";
 import { BasePage } from "tests/e2e/pages/BasePage";
-import { waitForStableRowCount } from "tests/e2e/utils/test-helpers";
 
 type ConnectionDetails = {
   conn_type: string;
@@ -180,17 +179,15 @@ export class ConnectionsPage extends BasePage {
 
     if (details.conn_type !== undefined && details.conn_type !== "") {
       // Scope the combobox to the form dialog to avoid matching stale elements
-      // outside the form. Use click() directly — Playwright retries until the
-      // element is visiblawait expect(this.connectionIdInput).toBeVisible({ timeout: 10_000 });e, enabled, and stable, avoiding the "detached from DOM"
-      // race that occurs when toBeEnabled() passes but the node is replaced before click().
+      // outside the form. Wait for it to become actionable before opening the
+      // list, which avoids races when the dialog is still settling.
       const selectCombobox = this.connectionForm.getByRole("combobox").first();
 
       await expect(async () => {
-        await expect(selectInput).toBeEnabled({ timeout: 10_000 });
-        await selectInput.click({ force: true, timeout: 5000 });
+        await expect(selectCombobox).toBeVisible({ timeout: 10_000 });
+        await expect(selectCombobox).toBeEnabled({ timeout: 10_000 });
+        await selectCombobox.click({ timeout: 5000 });
       }).toPass({ intervals: [2000, 3000], timeout: 120_000 });
-
-      await selectCombobox.click();
 
       const option = this.page.getByRole("option", { name: new RegExp(details.conn_type, "i") }).first();
 
@@ -269,7 +266,9 @@ export class ConnectionsPage extends BasePage {
   }
 
   public async getConnectionIds(): Promise<Array<string>> {
-    await expect(this.page.locator("tbody tr").first()).toBeVisible({ timeout: 5000 });
+    const rowLocator = this.connectionRows;
+
+    await expect(rowLocator.first()).toBeVisible({ timeout: 5000 });
 
     let stableRowCount = 0;
     let lastSeenCount = -1;
@@ -380,7 +379,7 @@ export class ConnectionsPage extends BasePage {
     await expect(row).toContainText(expectedType);
   }
 
-  private async findConnectionRow(connectionId: string): Promise<Locator | null> {
+  private async findConnectionRow(connectionId: string): Promise<Locator | undefined> {
     // Try search first (faster)
     const hasSearch = await this.searchInput.isVisible({ timeout: 3000 }).catch(() => false);
 
@@ -391,7 +390,7 @@ export class ConnectionsPage extends BasePage {
     return undefined;
   }
 
-  private async findConnectionRowUsingSearch(connectionId: string): Promise<Locator | null> {
+  private async findConnectionRowUsingSearch(connectionId: string): Promise<Locator | undefined> {
     await this.waitForConnectionsListLoad();
     await this.searchConnections(connectionId);
 
@@ -407,7 +406,7 @@ export class ConnectionsPage extends BasePage {
     try {
       await expect(row).toBeVisible({ timeout: 10_000 });
     } catch {
-      return null;
+      return undefined;
     }
 
     return row;

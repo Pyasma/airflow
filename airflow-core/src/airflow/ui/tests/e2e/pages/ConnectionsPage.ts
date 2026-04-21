@@ -143,6 +143,7 @@ export class ConnectionsPage extends BasePage {
 
     await expect(deleteButton).toBeVisible({ timeout: 10_000 });
     await expect(deleteButton).toBeEnabled({ timeout: 5000 });
+    await deleteButton.click();
 
     // Wait for the dialog to finish its open animation (data-state="open" is set by
     // Ark UI once the transition completes). Without this, the backdrop can cover the
@@ -182,16 +183,15 @@ export class ConnectionsPage extends BasePage {
       // outside the form. Wait for it to become actionable before opening the
       // list, which avoids races when the dialog is still settling.
       const selectCombobox = this.connectionForm.getByRole("combobox").first();
+      const option = this.page.getByRole("option", { name: new RegExp(details.conn_type, "i") }).first();
 
       await expect(async () => {
         await expect(selectCombobox).toBeVisible({ timeout: 10_000 });
         await expect(selectCombobox).toBeEnabled({ timeout: 10_000 });
         await selectCombobox.click({ timeout: 5000 });
-      }).toPass({ intervals: [2000, 3000], timeout: 120_000 });
+        await expect(option).toBeVisible({ timeout: 10_000 });
+      }).toPass({ intervals: [1000, 2000, 3000], timeout: 30_000 });
 
-      const option = this.page.getByRole("option", { name: new RegExp(details.conn_type, "i") }).first();
-
-      await expect(option).toBeVisible({ timeout: 10_000 });
       await option.click();
     }
 

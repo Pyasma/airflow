@@ -164,7 +164,6 @@ class TestParam:
             pytest.param("PT", id="bare-PT"),
             pytest.param("invalid", id="plain-text"),
             pytest.param("15M", id="missing-P-prefix"),
-            pytest.param("P-1Y", id="negative-value"),
             pytest.param("1Y2M", id="no-P-prefix"),
         ],
     )

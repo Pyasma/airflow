@@ -87,6 +87,7 @@ dependencies = [
     # Start of shared providers-discovery dependencies
     "jsonschema>=4.19.1",
     # End of shared providers-discovery dependencies
+    "isoduration>=20.11.0"
 ]
 
 [project.optional-dependencies]

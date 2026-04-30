@@ -27,17 +27,33 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
   const { t: translate } = useTranslation("components");
   const { disabled, paramsDict, setParamsDict } = useParamStore(namespace);
   const param = paramsDict[name] ?? paramPlaceholder;
-  const handleChange = (value: string) => {
-    if (paramsDict[name]) {
-      // "undefined" values are removed from params, so we set it to null to avoid falling back to DAG defaults.
-      // eslint-disable-next-line unicorn/no-null
-      paramsDict[name].value = value === "" ? null : value;
-    }
-
-    setParamsDict(paramsDict);
-    onUpdate(value);
+  const ISO_DURATION_REGEX = /^P(?=\d|T\d)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/;
+  const isValidDuration = (value: string): boolean => {
+  if (value === "") return true; // allow empty
+  if (value === "P" || value === "PT") return false;
+  return ISO_DURATION_REGEX.test(value);
   };
+  const handleChange = (value: string) => {
+  const isEmpty = value === "";
+  const isValid = isValidDuration(value);
 
+  if (!isValid) {
+    onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
+    return;
+  }
+
+  if (paramsDict[name]) {
+    setParamsDict({
+      ...paramsDict,
+      [name]: {
+        ...paramsDict[name],
+        value: isEmpty ? null : value,
+      },
+    });
+  }
+
+  onUpdate(value);
+  };
   return (
     <Input
       disabled={disabled}

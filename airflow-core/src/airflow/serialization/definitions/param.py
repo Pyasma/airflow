@@ -31,17 +31,19 @@ from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
-DURATION_FORMAT_CHECKER = FormatChecker()
+def get_format_duration() -> FormatChecker():
 
-@DURATION_FORMAT_CHECKER.checks("duration")
-def is_duration(value: str) -> bool:
-    if not isinstance(value, str):
-        return False
-    try:
-        parse_duration(value)
-        return True
-    except Exception:
-        return False
+    format_checker = FormatChecker()
+
+    @format_checker.checks("duration")
+    def is_duration(value: str) -> bool:
+        if not isinstance(value, str):
+            return False
+        try:
+            parse_duration(value)
+            return True
+        except Exception:
+            return False
 
 class SerializedParam:
     """Server-side param class for deserialization."""
@@ -75,7 +77,7 @@ class SerializedParam:
         try:
             if not is_arg_set(value := self.value):
                 raise ValueError("No value passed")
-            jsonschema.validate(value, self.schema, format_checker=DURATION_FORMAT_CHECKER)
+            jsonschema.validate(value, self.schema, format_checker=get_format_duration())
         except Exception:
             if not raises:
                 return None

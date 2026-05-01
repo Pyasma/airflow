@@ -40,18 +40,19 @@ logger = logging.getLogger(__name__)
 # Matches ISO 8601 duration strings such as PT15M, P1Y2M3DT4H5M6S, P1W, P1DT30S.
 # Decimal fractions with either "." or "," are allowed on any component (e.g. PT1.5H, PT30.5S).
 
-DURATION_FORMAT_CHECKER = FormatChecker()
+def get_format_duration() -> FormatChecker():
+    format_checker = FormatChecker()
 
-@DURATION_FORMAT_CHECKER.checks("duration")
-def is_duration(value: str) -> bool:
-    if not isinstance(value, str):
-        return False
-    try:
-        parse_duration(value)
-        return True
-    except Exception:
-        return False
-        
+    @format_checker.checks("duration")
+    def is_duration(value: str) -> bool:
+        if not isinstance(value, str):
+            return False
+        try:
+            parse_duration(value)
+            return True
+        except Exception:
+            return False
+            
 class Param:
     """
     Class to hold the default value of a Param and rule set to do the validations.
@@ -123,7 +124,7 @@ class Param:
                 return None
             raise ParamValidationError("No value passed and Param has no default value")
         try:
-            jsonschema.validate(final_val, self.schema, format_checker=DURATION_FORMAT_CHECKER)
+            jsonschema.validate(final_val, self.schema, format_checker=get_format_duration())
         except ValidationError as err:
             if suppress_exception:
                 return None

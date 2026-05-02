@@ -20,15 +20,15 @@ import contextlib
 import copy
 import json
 import logging
-import re
 from collections.abc import ItemsView, Iterable, Mapping, MutableMapping, ValuesView
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
+
+from isoduration import parse_duration
+from jsonschema import FormatChecker
 
 from airflow.sdk.definitions._internal.mixins import ResolveMixin
 from airflow.sdk.definitions._internal.types import NOTSET, is_arg_set
 from airflow.sdk.exceptions import ParamValidationError
-from isoduration import parse_duration
-from jsonschema import FormatChecker, Draft202012Validator 
 
 if TYPE_CHECKING:
     from airflow.sdk.definitions.context import Context
@@ -53,7 +53,7 @@ def get_format_duration() -> FormatChecker:
         except Exception:
             return False
     return format_checker
-            
+
 class Param:
     """
     Class to hold the default value of a Param and rule set to do the validations.

@@ -20,11 +20,10 @@ from __future__ import annotations
 
 import collections.abc
 import copy
-import re
 from typing import TYPE_CHECKING, Any, Literal
-from isoduration import parse_duration
-from jsonschema import FormatChecker, Draft202012Validator 
 
+from isoduration import parse_duration
+from jsonschema import FormatChecker
 
 from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 

@@ -17,8 +17,8 @@
  * under the License.
  */
 import { Input } from "@chakra-ui/react";
-import { useTranslation } from "react-i18next";
 import { parse } from "iso8601-duration";
+import { useTranslation } from "react-i18next";
 
 import { paramPlaceholder, useParamStore } from "src/queries/useParamStore";
 
@@ -31,7 +31,7 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
 
   const handleChange = (value: string) => {
     const isEmpty = value === "";
-    const normalize = value.replace(/,/g ,"."); 
+    const normalize = value.replace(/,/g, ".");
 
     if (!isEmpty && value !== "P" && value !== "PT") {
       try {

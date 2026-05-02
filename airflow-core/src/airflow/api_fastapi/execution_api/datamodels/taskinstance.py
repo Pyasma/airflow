@@ -184,6 +184,8 @@ class TIRetryStatePayload(StrictBaseModel):
     ]
     end_date: UtcDateTime
     rendered_map_index: str | None = None
+    retry_delay_seconds: float | None = None
+    retry_reason: str | None = None
 
 
 class TISkippedDownstreamTasksStatePayload(StrictBaseModel):
@@ -306,6 +308,7 @@ class DagRun(StrictBaseModel):
     consumed_asset_events: list[AssetEventDagRunReference]
     partition_key: str | None
     note: str | None = None
+    team_name: str | None = None
 
     @model_validator(mode="before")
     @classmethod

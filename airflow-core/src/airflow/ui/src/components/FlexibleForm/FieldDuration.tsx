@@ -27,7 +27,7 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
   const { t: translate } = useTranslation("components");
   const { disabled, paramsDict, setParamsDict } = useParamStore(namespace);
   const param = paramsDict[name] ?? paramPlaceholder;
-  const ISO_DURATION_REGEX = /^P(?=\d|T\d)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/;
+  const ISO_DURATION_REGEX = /^P(?=\d|T\d)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/u;
   const isValidDuration = (value: string): boolean => {
   if (value === "") return true; // allow empty
   if (value === "P" || value === "PT") return false;

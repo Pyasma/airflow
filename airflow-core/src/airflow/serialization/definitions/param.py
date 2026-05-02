@@ -31,7 +31,7 @@ from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
-def get_format_duration() -> FormatChecker():
+def get_format_duration() -> FormatChecker:
 
     format_checker = FormatChecker()
 

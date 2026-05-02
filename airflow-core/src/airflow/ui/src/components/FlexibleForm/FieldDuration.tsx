@@ -18,6 +18,7 @@
  */
 import { Input } from "@chakra-ui/react";
 import { useTranslation } from "react-i18next";
+import { parse } from "iso8601-duration";
 
 import { paramPlaceholder, useParamStore } from "src/queries/useParamStore";
 
@@ -27,19 +28,21 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
   const { t: translate } = useTranslation("components");
   const { disabled, paramsDict, setParamsDict } = useParamStore(namespace);
   const param = paramsDict[name] ?? paramPlaceholder;
-  const ISO_DURATION_REGEX = /^P(?=\d|T\d)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/u;
-  const isValidDuration = (value: string): boolean => {
-  if (value === "") return true; // allow empty
-  if (value === "P" || value === "PT") return false;
-  return ISO_DURATION_REGEX.test(value);
-  };
+
   const handleChange = (value: string) => {
   const isEmpty = value === "";
-  const isValid = isValidDuration(value);
 
-  if (!isValid) {
-    onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
-    return;
+  if (!isEmpty){
+    if (value === "P" || value === "PT") {
+      onUpdate(value);
+      return;
+    }
+    try {
+      parse(value.replace(/,/g ,".")); 
+    } catch {
+      onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
+      return;
+    }
   }
 
   if (paramsDict[name]) {

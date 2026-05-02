@@ -76,11 +76,12 @@
     "placeholderArray": "Enter each string on a new line",
     "placeholderExamples": "Start typing to see options",
     "placeholderMulti": "Select one or multiple values",
-    "plachholderDuration": "Enter Duration in ISO 8601 format",
+    "durationPlaceholder": "Enter Duration in ISO 8601 format",
     "validationErrorArrayNotArray": "Value must be an array.",
     "validationErrorArrayNotNumbers": "All elements in the array must be numbers.",
     "validationErrorArrayNotObject": "All elements in the array must be objects.",
-    "validationErrorRequired": "This field is required"
+    "validationErrorRequired": "This field is required",
+    "validationErrorDuration": "Invalid ISO 8601 duration format"
   },
   "graph": {
     "directionDown": "Top to Bottom",

@@ -284,6 +284,7 @@ export class ConnectionsPage extends BasePage {
             return true;
           }
           lastSeenCount = count;
+          await this.page.waitForTimeout(200);
 
           return false;
         },

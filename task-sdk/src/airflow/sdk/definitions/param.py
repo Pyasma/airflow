@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 # Matches ISO 8601 duration strings such as PT15M, P1Y2M3DT4H5M6S, P1W, P1DT30S.
 # Decimal fractions with either "." or "," are allowed on any component (e.g. PT1.5H, PT30.5S).
 
+
 def get_format_duration() -> FormatChecker:
     format_checker = FormatChecker()
 
@@ -52,7 +53,9 @@ def get_format_duration() -> FormatChecker:
             return True
         except Exception:
             return False
+
     return format_checker
+
 
 class Param:
     """

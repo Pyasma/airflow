@@ -31,13 +31,14 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
 
   const handleChange = (value: string) => {
     const isEmpty = value === "";
-    const normalize = value.replace(/,/g, ".");
+    const normalize = value.replaceAll(",", ".");
 
     if (!isEmpty && value !== "P" && value !== "PT") {
       try {
         parse(normalize);
       } catch {
         onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
+
         return;
       }
     }
@@ -54,6 +55,7 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
 
     onUpdate(value);
   };
+
   return (
     <Input
       disabled={disabled}

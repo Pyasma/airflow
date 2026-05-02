@@ -30,32 +30,29 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
   const param = paramsDict[name] ?? paramPlaceholder;
 
   const handleChange = (value: string) => {
-  const isEmpty = value === "";
+    const isEmpty = value === "";
+    const normalize = value.replace(/,/g ,"."); 
 
-  if (!isEmpty){
-    if (value === "P" || value === "PT") {
-      onUpdate(value);
-      return;
+    if (!isEmpty && value !== "P" && value !== "PT") {
+      try {
+        parse(normalize);
+      } catch {
+        onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
+        return;
+      }
     }
-    try {
-      parse(value.replace(/,/g ,".")); 
-    } catch {
-      onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
-      return;
+
+    if (paramsDict[name]) {
+      setParamsDict({
+        ...paramsDict,
+        [name]: {
+          ...paramsDict[name],
+          value: isEmpty ? null : normalize,
+        },
+      });
     }
-  }
 
-  if (paramsDict[name]) {
-    setParamsDict({
-      ...paramsDict,
-      [name]: {
-        ...paramsDict[name],
-        value: isEmpty ? null : value,
-      },
-    });
-  }
-
-  onUpdate(value);
+    onUpdate(value);
   };
   return (
     <Input

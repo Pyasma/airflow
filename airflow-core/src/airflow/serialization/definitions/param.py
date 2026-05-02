@@ -44,6 +44,7 @@ def get_format_duration() -> FormatChecker():
             return True
         except Exception:
             return False
+    return format_checker
 
 class SerializedParam:
     """Server-side param class for deserialization."""

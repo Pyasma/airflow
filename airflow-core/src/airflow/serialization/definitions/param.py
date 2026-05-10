@@ -22,7 +22,7 @@ import collections.abc
 import copy
 from typing import TYPE_CHECKING, Any, Literal
 
-from jsonschema import Draft202012Validator
+from jsonschema import FormatChecker, validate
 
 from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 
@@ -57,7 +57,17 @@ class SerializedParam:
         :param raises: All exceptions during validation are suppressed by
             default. They are only raised if this is set to *True* instead.
         """
-        import jsonschema
+        
+        format_checker = None
+
+        if isinstance(self.schema, dict) and self.schema.get("format") == "duration":
+            import isoduration
+
+            format_checker = FormatChecker()
+            format_checker.checks(
+                "duration",
+                raises=(Exception,),
+            )(isoduration.parse_duration)
 
         try:
             if not is_arg_set(value := self.value):
@@ -65,7 +75,7 @@ class SerializedParam:
             jsonschema.validate(
                 value,
                 self.schema,
-                format_checker=Draft202012Validator.FORMAT_CHECKER,
+                format_checker=format_checker,
             )
         except Exception:
             if not raises:

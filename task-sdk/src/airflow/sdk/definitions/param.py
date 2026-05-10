@@ -23,7 +23,8 @@ import logging
 from collections.abc import ItemsView, Iterable, Mapping, MutableMapping, ValuesView
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-from jsonschema import Draft202012Validator
+from jsonschema import FormatChecker
+from jsonschema.exceptions import ValidationError
 
 from airflow.sdk.definitions._internal.mixins import ResolveMixin
 from airflow.sdk.definitions._internal.types import NOTSET, is_arg_set
@@ -97,8 +98,6 @@ class Param:
         :param suppress_exception: To raise an exception or not when the validations fails.
             If true and validations fails, the return value would be None.
         """
-        import jsonschema
-        from jsonschema.exceptions import ValidationError
 
         if value is not NOTSET:
             self._check_json(value)
@@ -107,12 +106,25 @@ class Param:
             if suppress_exception:
                 return None
             raise ParamValidationError("No value passed and Param has no default value")
+
+        format_checker = None
+
+        if isinstance(self.schema, dict) and self.schema.get("format") == "duration":
+            import isoduration
+
+            format_checker = FormatChecker()
+            format_checker.checks(
+                "duration",
+                raises=(Exception,),
+            )(isoduration.parse_duration)
+            
         try:
             jsonschema.validate(
                 final_val,
                 self.schema,
-                format_checker=Draft202012Validator.FORMAT_CHECKER,
+                format_checker=format_checker,
             )
+        
         except ValidationError as err:
             if suppress_exception:
                 return None

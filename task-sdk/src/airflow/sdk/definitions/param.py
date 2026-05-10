@@ -23,8 +23,7 @@ import logging
 from collections.abc import ItemsView, Iterable, Mapping, MutableMapping, ValuesView
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-from isoduration import parse_duration
-from jsonschema import FormatChecker
+from jsonschema import Draft202012Validator, validate
 
 from airflow.sdk.definitions._internal.mixins import ResolveMixin
 from airflow.sdk.definitions._internal.types import NOTSET, is_arg_set
@@ -36,25 +35,6 @@ if TYPE_CHECKING:
     from airflow.sdk.types import Operator
 
 logger = logging.getLogger(__name__)
-
-# Matches ISO 8601 duration strings such as PT15M, P1Y2M3DT4H5M6S, P1W, P1DT30S.
-# Decimal fractions with either "." or "," are allowed on any component (e.g. PT1.5H, PT30.5S).
-
-
-def get_format_duration() -> FormatChecker:
-    format_checker = FormatChecker()
-
-    @format_checker.checks("duration")
-    def is_duration(value: str) -> bool:
-        if not isinstance(value, str):
-            return False
-        try:
-            parse_duration(value)
-            return True
-        except Exception:
-            return False
-
-    return format_checker
 
 
 class Param:
@@ -128,7 +108,7 @@ class Param:
                 return None
             raise ParamValidationError("No value passed and Param has no default value")
         try:
-            jsonschema.validate(final_val, self.schema, format_checker=get_format_duration())
+            jsonschema.validate(final_val, self.schema, format_checker=Draft202012Validator.FORMAT_CHECKER,)
         except ValidationError as err:
             if suppress_exception:
                 return None

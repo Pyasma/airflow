@@ -28,32 +28,31 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
   const { t: translate } = useTranslation("components");
   const { disabled, paramsDict, setParamsDict } = useParamStore(namespace);
   const param = paramsDict[name] ?? paramPlaceholder;
-
   const handleChange = (value: string) => {
     const isEmpty = value === "";
-    const normalize = value.replaceAll(",", ".");
+    const parsedValue = value.replaceAll(",", ".");
 
-    if (!isEmpty && value !== "P" && value !== "PT") {
-      try {
-        parse(normalize);
-      } catch {
-        onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
-
-        return;
-      }
-    }
-
+    // ALWAYS store user input
     if (paramsDict[name]) {
       setParamsDict({
         ...paramsDict,
         [name]: {
           ...paramsDict[name],
-          value: isEmpty ? null : normalize,
+          value: isEmpty ? null : value,
         },
       });
     }
+    if (isEmpty) {
+      onUpdate(value);
 
-    onUpdate(value);
+      return;
+    }
+    try {
+      parse(parsedValue);
+      onUpdate(value);
+    } catch {
+      onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
+    }
   };
 
   return (

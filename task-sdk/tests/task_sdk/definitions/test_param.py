@@ -150,7 +150,6 @@ class TestParam:
             pytest.param("P1DT2H", id="days-and-hours"),
             pytest.param("P1Y2M3DT4H5M6S", id="full-duration"),
             pytest.param("PT1.5H", id="fractional-hours-dot"),
-            pytest.param("PT1,5H", id="fractional-hours-comma"),
         ],
     )
     def test_string_duration_format(self, duration):

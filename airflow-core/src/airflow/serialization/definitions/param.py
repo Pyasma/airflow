@@ -22,30 +22,12 @@ import collections.abc
 import copy
 from typing import TYPE_CHECKING, Any, Literal
 
-from isoduration import parse_duration
-from jsonschema import FormatChecker
+from jsonschema import validate, Draft202012Validator
 
 from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
-
-
-def get_format_duration() -> FormatChecker:
-
-    format_checker = FormatChecker()
-
-    @format_checker.checks("duration")
-    def is_duration(value: str) -> bool:
-        if not isinstance(value, str):
-            return False
-        try:
-            parse_duration(value)
-            return True
-        except Exception:
-            return False
-
-    return format_checker
 
 
 class SerializedParam:
@@ -80,7 +62,7 @@ class SerializedParam:
         try:
             if not is_arg_set(value := self.value):
                 raise ValueError("No value passed")
-            jsonschema.validate(value, self.schema, format_checker=get_format_duration())
+            jsonschema.validate(value, self.schema, format_checker=Draft202012Validator.FORMAT_CHECKER,)
         except Exception:
             if not raises:
                 return None

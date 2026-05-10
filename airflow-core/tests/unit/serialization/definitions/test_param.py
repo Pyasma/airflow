@@ -16,15 +16,11 @@
 # under the License.
 from __future__ import annotations
 
-from contextlib import nullcontext
-from typing import Literal
-
 import pytest
 
-from airflow.sdk.definitions.param import Param, ParamsDict
+from airflow.sdk.definitions.param import Param
 from airflow.sdk.exceptions import ParamValidationError
 from airflow.serialization.definitions.param import SerializedParam
-from airflow.serialization.serialized_objects import BaseSerialization
 
 
 class TestSerializedParam:

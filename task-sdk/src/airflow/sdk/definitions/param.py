@@ -23,7 +23,7 @@ import logging
 from collections.abc import ItemsView, Iterable, Mapping, MutableMapping, ValuesView
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-from jsonschema import Draft202012Validator, validate
+from jsonschema import Draft202012Validator
 
 from airflow.sdk.definitions._internal.mixins import ResolveMixin
 from airflow.sdk.definitions._internal.types import NOTSET, is_arg_set
@@ -108,7 +108,11 @@ class Param:
                 return None
             raise ParamValidationError("No value passed and Param has no default value")
         try:
-            jsonschema.validate(final_val, self.schema, format_checker=Draft202012Validator.FORMAT_CHECKER,)
+            jsonschema.validate(
+                final_val,
+                self.schema,
+                format_checker=Draft202012Validator.FORMAT_CHECKER,
+            )
         except ValidationError as err:
             if suppress_exception:
                 return None

@@ -22,7 +22,7 @@ import collections.abc
 import copy
 from typing import TYPE_CHECKING, Any, Literal
 
-from jsonschema import validate, Draft202012Validator
+from jsonschema import Draft202012Validator
 
 from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 
@@ -62,7 +62,11 @@ class SerializedParam:
         try:
             if not is_arg_set(value := self.value):
                 raise ValueError("No value passed")
-            jsonschema.validate(value, self.schema, format_checker=Draft202012Validator.FORMAT_CHECKER,)
+            jsonschema.validate(
+                value,
+                self.schema,
+                format_checker=Draft202012Validator.FORMAT_CHECKER,
+            )
         except Exception:
             if not raises:
                 return None

@@ -23,9 +23,6 @@ import logging
 from collections.abc import ItemsView, Iterable, Mapping, MutableMapping, ValuesView
 from typing import TYPE_CHECKING, Any, ClassVar, Literal
 
-from jsonschema import FormatChecker
-from jsonschema.exceptions import ValidationError
-
 from airflow.sdk.definitions._internal.mixins import ResolveMixin
 from airflow.sdk.definitions._internal.types import NOTSET, is_arg_set
 from airflow.sdk.exceptions import ParamValidationError
@@ -98,6 +95,9 @@ class Param:
         :param suppress_exception: To raise an exception or not when the validations fails.
             If true and validations fails, the return value would be None.
         """
+        import jsonschema
+        from jsonschema import FormatChecker
+        from jsonschema.exceptions import ValidationError
 
         if value is not NOTSET:
             self._check_json(value)

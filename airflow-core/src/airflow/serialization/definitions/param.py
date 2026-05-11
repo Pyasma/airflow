@@ -22,8 +22,6 @@ import collections.abc
 import copy
 from typing import TYPE_CHECKING, Any, Literal
 
-from jsonschema import FormatChecker, validate
-
 from airflow.serialization.definitions.notset import NOTSET, is_arg_set
 
 if TYPE_CHECKING:
@@ -57,6 +55,8 @@ class SerializedParam:
         :param raises: All exceptions during validation are suppressed by
             default. They are only raised if this is set to *True* instead.
         """
+        import jsonschema
+        from jsonschema import FormatChecker, validate
         try:
             if not is_arg_set(value := self.value):
                 raise ValueError("No value passed")

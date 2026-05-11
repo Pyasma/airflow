@@ -107,22 +107,11 @@ class Param:
                 return None
             raise ParamValidationError("No value passed and Param has no default value")
 
-        format_checker = None
-
-        if isinstance(self.schema, dict) and self.schema.get("format") == "duration":
-            import isoduration
-
-            format_checker = FormatChecker()
-            format_checker.checks(
-                "duration",
-                raises=(Exception,),
-            )(isoduration.parse_duration)
-            
         try:
             jsonschema.validate(
                 final_val,
                 self.schema,
-                format_checker=format_checker,
+                format_checker=FormatChecker(),
             )
         
         except ValidationError as err:

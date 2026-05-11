@@ -57,25 +57,13 @@ class SerializedParam:
         :param raises: All exceptions during validation are suppressed by
             default. They are only raised if this is set to *True* instead.
         """
-        
-        format_checker = None
-
-        if isinstance(self.schema, dict) and self.schema.get("format") == "duration":
-            import isoduration
-
-            format_checker = FormatChecker()
-            format_checker.checks(
-                "duration",
-                raises=(Exception,),
-            )(isoduration.parse_duration)
-
         try:
             if not is_arg_set(value := self.value):
                 raise ValueError("No value passed")
             jsonschema.validate(
                 value,
                 self.schema,
-                format_checker=format_checker,
+                format_checker=FormatChecker(),
             )
         except Exception:
             if not raises:

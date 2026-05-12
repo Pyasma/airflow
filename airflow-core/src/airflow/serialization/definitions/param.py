@@ -56,7 +56,8 @@ class SerializedParam:
             default. They are only raised if this is set to *True* instead.
         """
         import jsonschema
-        from jsonschema import FormatChecker, validate
+        from jsonschema import FormatChecker
+
         try:
             if not is_arg_set(value := self.value):
                 raise ValueError("No value passed")

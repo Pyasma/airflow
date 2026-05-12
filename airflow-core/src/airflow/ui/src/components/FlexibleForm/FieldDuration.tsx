@@ -32,7 +32,6 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
     const isEmpty = value === "";
     const parsedValue = value.replaceAll(",", ".");
 
-    // ALWAYS store user input
     if (paramsDict[name]) {
       setParamsDict({
         ...paramsDict,
@@ -49,7 +48,7 @@ export const FieldDuration = ({ name, namespace = "default", onUpdate }: Flexibl
     }
     try {
       parse(parsedValue);
-      onUpdate(value);
+      onUpdate(parsedValue);
     } catch {
       onUpdate(undefined, translate("flexibleForm.validationErrorDuration"));
     }

@@ -113,7 +113,7 @@ class Param:
                 self.schema,
                 format_checker=FormatChecker(),
             )
-        
+
         except ValidationError as err:
             if suppress_exception:
                 return None
